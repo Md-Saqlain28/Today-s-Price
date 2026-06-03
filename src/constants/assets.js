@@ -30,11 +30,13 @@ export const ASSET_SECTIONS = [
   {
     id: "energy",
     title: "Petroleum & Energy",
-    description: "EIA-style proxy endpoints for oil and natural gas.",
+    description: "Proxy endpoints for oil, gas, petrol, and diesel prices.",
     assets: [
       { id: "wti-crude", symbol: "WTI", name: "WTI Crude Oil", icon: "Wt" },
       { id: "brent-crude", symbol: "BRENT", name: "Brent Crude", icon: "Br" },
       { id: "natural-gas", symbol: "NG", name: "Natural Gas", icon: "Ng" },
+      { id: "petrol", symbol: "PETROL", name: "Petrol", icon: "Pe" },
+      { id: "diesel", symbol: "DIESEL", name: "Diesel", icon: "Di" },
     ],
   },
 ];

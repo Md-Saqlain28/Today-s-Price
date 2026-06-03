@@ -16,6 +16,7 @@ Status: complete.
 
 - Cryptocurrency prices fetch directly from CoinGecko.
 - Precious metals and energy services are proxy-ready through `VITE_PROXY_BASE_URL`.
+- Petroleum & Energy includes WTI crude, Brent crude, natural gas, petrol, and diesel.
 - Keyed API requests should be handled by Cloudflare Workers or Vercel Edge Functions.
 
 Status: initial implementation complete. Add real proxy credentials before production use.
@@ -79,3 +80,11 @@ Each endpoint should return an object keyed by asset `id` or `symbol`:
   }
 }
 ```
+
+Energy keys currently expected by the dashboard:
+
+- `wti-crude`
+- `brent-crude`
+- `natural-gas`
+- `petrol`
+- `diesel`

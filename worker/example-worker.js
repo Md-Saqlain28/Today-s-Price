@@ -91,6 +91,18 @@ async function fetchEnergy(env) {
       updatedAt: new Date().toISOString(),
       source: `${EIA_API_BASE_URL} - configure exact series`,
     },
+    petrol: {
+      price: null,
+      change24h: null,
+      updatedAt: new Date().toISOString(),
+      source: `${EIA_API_BASE_URL} - configure retail gasoline or local petrol series`,
+    },
+    diesel: {
+      price: null,
+      change24h: null,
+      updatedAt: new Date().toISOString(),
+      source: `${EIA_API_BASE_URL} - configure retail diesel series`,
+    },
   });
 }
 
