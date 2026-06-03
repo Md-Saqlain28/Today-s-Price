@@ -1,0 +1,66 @@
+import { Activity, RefreshCw, ShieldCheck } from "lucide-react";
+import { ASSET_SECTIONS } from "./constants/assets.js";
+import { Header } from "./components/Header.jsx";
+import { CategorySection } from "./components/CategorySection.jsx";
+import { LastUpdatedBadge } from "./components/LastUpdatedBadge.jsx";
+import { usePriceData } from "./hooks/usePriceData.js";
+
+export default function App() {
+  const {
+    pricesBySection,
+    loadingBySection,
+    errorsBySection,
+    lastRefreshAt,
+    isRefreshing,
+    refreshAll,
+  } = usePriceData();
+
+  return (
+    <main className="app-shell">
+      <Header />
+
+      <section className="dashboard-toolbar" aria-label="Dashboard controls">
+        <div className="toolbar-copy">
+          <span className="toolbar-kicker">
+            <Activity size={16} aria-hidden="true" />
+            Live market monitor
+          </span>
+          <h1>Today's Price</h1>
+          <p>
+            A focused price board for crypto, metals, and energy assets with
+            category-specific polling.
+          </p>
+        </div>
+
+        <div className="toolbar-actions">
+          <LastUpdatedBadge timestamp={lastRefreshAt} active={isRefreshing} />
+          <button className="refresh-button" type="button" onClick={refreshAll}>
+            <RefreshCw size={17} aria-hidden="true" />
+            Refresh
+          </button>
+        </div>
+      </section>
+
+      <section className="proxy-note" aria-label="API key protection note">
+        <ShieldCheck size={18} aria-hidden="true" />
+        <p>
+          Keyed data sources are designed to run through a lightweight proxy.
+          Set <code>VITE_PROXY_BASE_URL</code> to a Cloudflare Worker or Vercel
+          Edge Function endpoint when those APIs are ready.
+        </p>
+      </section>
+
+      <div className="section-stack">
+        {ASSET_SECTIONS.map((section) => (
+          <CategorySection
+            key={section.id}
+            section={section}
+            prices={pricesBySection[section.id] || []}
+            isLoading={loadingBySection[section.id]}
+            error={errorsBySection[section.id]}
+          />
+        ))}
+      </div>
+    </main>
+  );
+}

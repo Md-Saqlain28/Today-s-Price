@@ -1,0 +1,40 @@
+export const POLLING_INTERVALS = {
+  crypto: 30_000,
+  metals: 5 * 60_000,
+  energy: 15 * 60_000,
+};
+
+export const ASSET_SECTIONS = [
+  {
+    id: "crypto",
+    title: "Cryptocurrency",
+    description: "Fast-moving digital assets from CoinGecko.",
+    assets: [
+      { id: "bitcoin", symbol: "BTC", name: "Bitcoin", icon: "B" },
+      { id: "ethereum", symbol: "ETH", name: "Ethereum", icon: "E" },
+      { id: "solana", symbol: "SOL", name: "Solana", icon: "S" },
+      { id: "ripple", symbol: "XRP", name: "XRP", icon: "X" },
+    ],
+  },
+  {
+    id: "metals",
+    title: "Precious Metals",
+    description: "GoldAPI-style proxy endpoints for key-protected metals data.",
+    assets: [
+      { id: "gold", symbol: "XAU", name: "Gold", icon: "Au" },
+      { id: "silver", symbol: "XAG", name: "Silver", icon: "Ag" },
+      { id: "platinum", symbol: "XPT", name: "Platinum", icon: "Pt" },
+      { id: "palladium", symbol: "XPD", name: "Palladium", icon: "Pd" },
+    ],
+  },
+  {
+    id: "energy",
+    title: "Petroleum & Energy",
+    description: "EIA-style proxy endpoints for oil and natural gas.",
+    assets: [
+      { id: "wti-crude", symbol: "WTI", name: "WTI Crude Oil", icon: "Wt" },
+      { id: "brent-crude", symbol: "BRENT", name: "Brent Crude", icon: "Br" },
+      { id: "natural-gas", symbol: "NG", name: "Natural Gas", icon: "Ng" },
+    ],
+  },
+];
