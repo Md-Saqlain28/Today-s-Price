@@ -61,6 +61,15 @@ Create `.env.local` when proxy APIs are available:
 VITE_PROXY_BASE_URL=https://your-worker.your-subdomain.workers.dev
 ```
 
+For a private/demo build, you can also call APIs directly from the frontend:
+
+```bash
+VITE_GOLD_API_KEY=your_goldapi_key
+VITE_EIA_API_KEY=your_eia_key
+```
+
+Important: any `VITE_*` value is visible in the browser bundle. This is acceptable only for demos, private testing, or low-risk free keys. Use `VITE_PROXY_BASE_URL` for production.
+
 ## Proxy Contract
 
 The frontend expects:
@@ -88,3 +97,13 @@ Energy keys currently expected by the dashboard:
 - `natural-gas`
 - `petrol`
 - `diesel`
+
+Direct EIA mode maps those energy cards to public EIA series IDs:
+
+- `wti-crude`: `PET.RWTC.D`
+- `brent-crude`: `PET.RBRTE.D`
+- `natural-gas`: `NG.RNGWHHD.D`
+- `petrol`: `PET.EMM_EPM0_PTE_NUS_DPG.W`
+- `diesel`: `PET.EMD_EPD2D_PTE_NUS_DPG.W`
+
+Petrol and diesel values from EIA are US retail gasoline/diesel series, usually in dollars per gallon. For India city-specific petrol/diesel prices, use a different source or proxy endpoint.
