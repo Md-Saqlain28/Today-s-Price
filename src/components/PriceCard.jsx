@@ -29,7 +29,7 @@ function formatPrice(value) {
 
 function formatTimestamp(timestamp) {
   if (!timestamp) {
-    return "Proxy not configured";
+    return "Not updated";
   }
 
   return new Intl.DateTimeFormat(undefined, {
@@ -83,6 +83,10 @@ function statusLabel(status) {
       return "Proxy";
     case "loading":
       return "Loading";
+    case "rate_limited":
+      return "Limited";
+    case "unavailable":
+      return "Check";
     default:
       return "Check";
   }
