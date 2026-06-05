@@ -7,6 +7,7 @@ const GOLD_API_LOCAL_PREFIX = "/api/goldapi";
 
 const METALS_DEV_API_KEY = import.meta.env.VITE_METALS_DEV_API_KEY || "";
 const METALS_DEV_URL = "https://api.metals.dev/v1/latest";
+const METALS_DEV_TIMESERIES_URL = "https://api.metals.dev/v1/timeseries";
 
 const symbolByAssetId = {
   gold: "XAU",
@@ -21,6 +22,11 @@ const metalsDevKeyMap = {
   platinum: "platinum",
   palladium: "palladium",
 };
+
+// Cache yesterday's prices so we don't burn quota on every poll.
+// Refreshed at most once per browser session.
+let cachedYesterdayPrices = null;
+let cachedYesterdayDate = null;
 
 export async function fetchMetalsPrices(assets) {
   // 1. Production proxy (Cloudflare Worker, etc.)
@@ -77,10 +83,94 @@ async function fetchMetalsFromProxy(url, assets) {
 }
 
 // ──────────────────────────────────────────────
-// Metals.dev (single request for all metals)
+// Metals.dev (latest + cached yesterday for 24h change)
 // ──────────────────────────────────────────────
 
+function getYesterdayDateString() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+async function fetchYesterdayPrices() {
+  const yesterday = getYesterdayDateString();
+
+  // Return cache if we already fetched for today's session
+  if (cachedYesterdayPrices && cachedYesterdayDate === yesterday) {
+    return cachedYesterdayPrices;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      api_key: METALS_DEV_API_KEY,
+      start_date: yesterday,
+      end_date: yesterday,
+      currency: "USD",
+      unit: "toz",
+    });
+
+    const response = await fetch(
+      `${METALS_DEV_TIMESERIES_URL}?${params.toString()}`
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const dayData = data?.rates?.[yesterday];
+
+    if (dayData?.metals) {
+      cachedYesterdayPrices = dayData.metals;
+      cachedYesterdayDate = yesterday;
+      return cachedYesterdayPrices;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchMetalsFromMetalsDev(assets) {
+  // Fire both requests in parallel
+  const [latestResult, yesterdayPrices] = await Promise.all([
+    fetchMetalsDevLatest(),
+    fetchYesterdayPrices(),
+  ]);
+
+  if (!latestResult) {
+    throw new Error("Metals.dev latest request failed");
+  }
+
+  const { metals, timestamp } = latestResult;
+
+  return assets.map((asset) => {
+    const key = metalsDevKeyMap[asset.id];
+    const price = key ? metals[key] ?? null : null;
+    const prevPrice =
+      yesterdayPrices && key ? yesterdayPrices[key] ?? null : null;
+
+    const change24h =
+      price != null && prevPrice != null
+        ? ((price - prevPrice) / prevPrice) * 100
+        : null;
+
+    return {
+      ...asset,
+      category: "metals",
+      price,
+      change24h,
+      updatedAt: timestamp
+        ? new Date(timestamp * 1000).toISOString()
+        : new Date().toISOString(),
+      source: "Metals.dev",
+      status: price == null ? "unavailable" : "live",
+    };
+  });
+}
+
+async function fetchMetalsDevLatest() {
   try {
     const params = new URLSearchParams({
       api_key: METALS_DEV_API_KEY,
@@ -91,31 +181,12 @@ async function fetchMetalsFromMetalsDev(assets) {
     const response = await fetch(`${METALS_DEV_URL}?${params.toString()}`);
 
     if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      throw new Error(`Metals.dev error ${response.status}: ${body}`);
+      return null;
     }
 
-    const data = await response.json();
-    const metals = data.metals || {};
-
-    return assets.map((asset) => {
-      const key = metalsDevKeyMap[asset.id];
-      const price = key ? metals[key] ?? null : null;
-
-      return {
-        ...asset,
-        category: "metals",
-        price,
-        change24h: null, // metals.dev /latest doesn't provide 24h change
-        updatedAt: data.timestamp
-          ? new Date(data.timestamp * 1000).toISOString()
-          : new Date().toISOString(),
-        source: "Metals.dev",
-        status: price == null ? "unavailable" : "live",
-      };
-    });
-  } catch (err) {
-    throw new Error(err.message || "Metals.dev request failed");
+    return await response.json();
+  } catch {
+    return null;
   }
 }
 
@@ -145,7 +216,6 @@ async function fetchGoldApiAsset(asset) {
   }
 
   try {
-    // Request goes to Vite dev proxy: /api/goldapi/XAU/USD → goldapi.io/api/XAU/USD
     const response = await fetch(`${GOLD_API_LOCAL_PREFIX}/${symbol}/USD`, {
       headers: {
         "x-access-token": GOLD_API_KEY,
@@ -157,7 +227,6 @@ async function fetchGoldApiAsset(asset) {
     }
 
     if (!response.ok) {
-      // Parse error body for a clearer message (e.g. "Monthly API quota exceeded")
       let errorMsg = `GoldAPI error ${response.status}`;
       try {
         const errBody = await response.json();
