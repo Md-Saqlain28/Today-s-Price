@@ -1,12 +1,34 @@
 import { buildProxyUrl, EIA_API_KEY } from "./config.js";
 
-const EIA_SERIES_URL = "https://api.eia.gov/series/";
-const eiaSeriesByAssetId = {
-  "wti-crude": "PET.RWTC.D",
-  "brent-crude": "PET.RBRTE.D",
-  "natural-gas": "NG.RNGWHHD.D",
-  petrol: "PET.EMM_EPM0_PTE_NUS_DPG.W",
-  diesel: "PET.EMD_EPD2D_PTE_NUS_DPG.W",
+const EIA_V2_BASE = "https://api.eia.gov/v2";
+
+// EIA API v2 route mapping: each asset needs a specific route, series facet, and frequency.
+const eiaV2Config = {
+  "wti-crude": {
+    route: "/petroleum/pri/spt/data/",
+    series: "RWTC",
+    frequency: "daily",
+  },
+  "brent-crude": {
+    route: "/petroleum/pri/spt/data/",
+    series: "RBRTE",
+    frequency: "daily",
+  },
+  "natural-gas": {
+    route: "/natural-gas/pri/fut/data/",
+    series: "RNGWHHD",
+    frequency: "daily",
+  },
+  petrol: {
+    route: "/petroleum/pri/gnd/data/",
+    series: "EMM_EPM0_PTE_NUS_DPG",
+    frequency: "weekly",
+  },
+  diesel: {
+    route: "/petroleum/pri/gnd/data/",
+    series: "EMD_EPD2D_PTE_NUS_DPG",
+    frequency: "weekly",
+  },
 };
 
 export async function fetchEnergyPrices(assets) {
@@ -17,7 +39,7 @@ export async function fetchEnergyPrices(assets) {
   }
 
   if (EIA_API_KEY) {
-    return fetchEnergyFromEia(assets);
+    return fetchEnergyFromEiaV2(assets);
   }
 
   return assets.map((asset) => ({
@@ -53,74 +75,80 @@ async function fetchEnergyFromProxy(url, assets) {
   });
 }
 
-async function fetchEnergyFromEia(assets) {
-  const quotes = await Promise.all(
-    assets.map(async (asset) => {
-      const seriesId = eiaSeriesByAssetId[asset.id];
-
-      if (!seriesId) {
-        return {
-          ...asset,
-          category: "energy",
-          price: null,
-          change24h: null,
-          updatedAt: null,
-          source: "EIA Open Data",
-          status: "unavailable",
-        };
-      }
-
-      const params = new URLSearchParams({
-        api_key: EIA_API_KEY,
-        series_id: seriesId,
-      });
-      const response = await fetch(`${EIA_SERIES_URL}?${params.toString()}`);
-
-      if (!response.ok) {
-        throw new Error(`EIA request failed for ${asset.name}: ${response.status}`);
-      }
-
-      const payload = await response.json();
-      const points = payload.series?.[0]?.data ?? [];
-      const latest = points[0];
-      const previous = points[1];
-      const price = latest?.[1] ?? null;
-      const previousPrice = previous?.[1] ?? null;
-      const change24h =
-        price != null && previousPrice
-          ? ((price - previousPrice) / previousPrice) * 100
-          : null;
-
-      return {
-        ...asset,
-        category: "energy",
-        price,
-        change24h,
-        updatedAt: parseEiaPeriod(latest?.[0]),
-        source: `EIA ${seriesId}`,
-        status: price == null ? "unavailable" : "live",
-      };
-    })
+async function fetchEnergyFromEiaV2(assets) {
+  const results = await Promise.allSettled(
+    assets.map((asset) => fetchSingleEiaV2Asset(asset))
   );
 
-  return quotes;
+  return results.map((result, index) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    }
+
+    return {
+      ...assets[index],
+      category: "energy",
+      price: null,
+      change24h: null,
+      updatedAt: null,
+      source: `EIA error`,
+      status: "unavailable",
+    };
+  });
 }
 
-function parseEiaPeriod(period) {
-  if (!period) {
-    return new Date().toISOString();
+async function fetchSingleEiaV2Asset(asset) {
+  const config = eiaV2Config[asset.id];
+
+  if (!config) {
+    return {
+      ...asset,
+      category: "energy",
+      price: null,
+      change24h: null,
+      updatedAt: null,
+      source: "EIA Open Data",
+      status: "unavailable",
+    };
   }
 
-  if (/^\d{8}$/.test(period)) {
-    const year = period.slice(0, 4);
-    const month = period.slice(4, 6);
-    const day = period.slice(6, 8);
-    return new Date(`${year}-${month}-${day}T00:00:00.000Z`).toISOString();
+  const params = new URLSearchParams({
+    api_key: EIA_API_KEY,
+    "facets[series][]": config.series,
+    frequency: config.frequency,
+    "data[0]": "value",
+    "sort[0][column]": "period",
+    "sort[0][direction]": "desc",
+    length: "2",
+  });
+
+  const url = `${EIA_V2_BASE}${config.route}?${params.toString()}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`EIA request failed for ${asset.name}: ${response.status}`);
   }
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(period)) {
-    return new Date(`${period}T00:00:00.000Z`).toISOString();
-  }
+  const payload = await response.json();
+  const dataPoints = payload?.response?.data ?? [];
+  const latest = dataPoints[0];
+  const previous = dataPoints[1];
+  const price = latest?.value != null ? parseFloat(latest.value) : null;
+  const previousPrice = previous?.value != null ? parseFloat(previous.value) : null;
+  const change24h =
+    price != null && previousPrice
+      ? ((price - previousPrice) / previousPrice) * 100
+      : null;
 
-  return new Date().toISOString();
+  return {
+    ...asset,
+    category: "energy",
+    price,
+    change24h,
+    updatedAt: latest?.period
+      ? new Date(`${latest.period}T00:00:00.000Z`).toISOString()
+      : new Date().toISOString(),
+    source: `EIA · ${latest?.["series-description"] ?? config.series}`,
+    status: price == null ? "unavailable" : "live",
+  };
 }

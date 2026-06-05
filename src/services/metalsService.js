@@ -1,6 +1,10 @@
 import { buildProxyUrl, GOLD_API_KEY } from "./config.js";
 
-const GOLD_API_BASE_URL = "https://www.goldapi.io/api";
+// During development Vite proxies /api/goldapi → https://www.goldapi.io/api
+// so the browser never hits a CORS wall. In production, set VITE_PROXY_BASE_URL
+// to a Cloudflare Worker / Vercel Edge Function that holds the key server-side.
+const GOLD_API_LOCAL_PREFIX = "/api/goldapi";
+
 const symbolByAssetId = {
   gold: "XAU",
   silver: "XAG",
@@ -9,12 +13,13 @@ const symbolByAssetId = {
 };
 
 export async function fetchMetalsPrices(assets) {
+  // 1. Production proxy (Cloudflare Worker, etc.)
   const url = buildProxyUrl("/metals/prices");
-
   if (url) {
     return fetchMetalsFromProxy(url, assets);
   }
 
+  // 2. Direct via Vite dev proxy (local development)
   if (GOLD_API_KEY) {
     return fetchMetalsFromGoldApi(assets);
   }
@@ -53,9 +58,17 @@ async function fetchMetalsFromProxy(url, assets) {
 }
 
 async function fetchMetalsFromGoldApi(assets) {
-  const quotes = await Promise.all(assets.map(fetchGoldApiAsset));
+  const results = await Promise.allSettled(
+    assets.map((asset) => fetchGoldApiAsset(asset))
+  );
 
-  return quotes;
+  return results.map((result, index) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    }
+
+    return unavailableMetal(assets[index], "GoldAPI fetch failed");
+  });
 }
 
 async function fetchGoldApiAsset(asset) {
@@ -66,7 +79,8 @@ async function fetchGoldApiAsset(asset) {
   }
 
   try {
-    const response = await fetch(`${GOLD_API_BASE_URL}/${symbol}/USD`, {
+    // Request goes to Vite dev proxy: /api/goldapi/XAU/USD → goldapi.io/api/XAU/USD
+    const response = await fetch(`${GOLD_API_LOCAL_PREFIX}/${symbol}/USD`, {
       headers: {
         "x-access-token": GOLD_API_KEY,
       },
