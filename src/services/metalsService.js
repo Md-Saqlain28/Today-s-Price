@@ -5,11 +5,21 @@ import { buildProxyUrl, GOLD_API_KEY } from "./config.js";
 // to a Cloudflare Worker / Vercel Edge Function that holds the key server-side.
 const GOLD_API_LOCAL_PREFIX = "/api/goldapi";
 
+const METALS_DEV_API_KEY = import.meta.env.VITE_METALS_DEV_API_KEY || "";
+const METALS_DEV_URL = "https://api.metals.dev/v1/latest";
+
 const symbolByAssetId = {
   gold: "XAU",
   silver: "XAG",
   platinum: "XPT",
   palladium: "XPD",
+};
+
+const metalsDevKeyMap = {
+  gold: "gold",
+  silver: "silver",
+  platinum: "platinum",
+  palladium: "palladium",
 };
 
 export async function fetchMetalsPrices(assets) {
@@ -19,7 +29,12 @@ export async function fetchMetalsPrices(assets) {
     return fetchMetalsFromProxy(url, assets);
   }
 
-  // 2. Direct via Vite dev proxy (local development)
+  // 2. Metals.dev API (single call for all metals — more quota-efficient)
+  if (METALS_DEV_API_KEY) {
+    return fetchMetalsFromMetalsDev(assets);
+  }
+
+  // 3. GoldAPI via Vite dev proxy (local development)
   if (GOLD_API_KEY) {
     return fetchMetalsFromGoldApi(assets);
   }
@@ -30,10 +45,14 @@ export async function fetchMetalsPrices(assets) {
     price: null,
     change24h: null,
     updatedAt: null,
-    source: "Add VITE_GOLD_API_KEY",
+    source: "Add VITE_GOLD_API_KEY or VITE_METALS_DEV_API_KEY",
     status: "proxy_required",
   }));
 }
+
+// ──────────────────────────────────────────────
+// Production proxy
+// ──────────────────────────────────────────────
 
 async function fetchMetalsFromProxy(url, assets) {
   const response = await fetch(url);
@@ -56,6 +75,53 @@ async function fetchMetalsFromProxy(url, assets) {
     };
   });
 }
+
+// ──────────────────────────────────────────────
+// Metals.dev (single request for all metals)
+// ──────────────────────────────────────────────
+
+async function fetchMetalsFromMetalsDev(assets) {
+  try {
+    const params = new URLSearchParams({
+      api_key: METALS_DEV_API_KEY,
+      currency: "USD",
+      unit: "toz",
+    });
+
+    const response = await fetch(`${METALS_DEV_URL}?${params.toString()}`);
+
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`Metals.dev error ${response.status}: ${body}`);
+    }
+
+    const data = await response.json();
+    const metals = data.metals || {};
+
+    return assets.map((asset) => {
+      const key = metalsDevKeyMap[asset.id];
+      const price = key ? metals[key] ?? null : null;
+
+      return {
+        ...asset,
+        category: "metals",
+        price,
+        change24h: null, // metals.dev /latest doesn't provide 24h change
+        updatedAt: data.timestamp
+          ? new Date(data.timestamp * 1000).toISOString()
+          : new Date().toISOString(),
+        source: "Metals.dev",
+        status: price == null ? "unavailable" : "live",
+      };
+    });
+  } catch (err) {
+    throw new Error(err.message || "Metals.dev request failed");
+  }
+}
+
+// ──────────────────────────────────────────────
+// GoldAPI.io via Vite dev proxy
+// ──────────────────────────────────────────────
 
 async function fetchMetalsFromGoldApi(assets) {
   const results = await Promise.allSettled(
@@ -91,7 +157,17 @@ async function fetchGoldApiAsset(asset) {
     }
 
     if (!response.ok) {
-      return unavailableMetal(asset, `GoldAPI error ${response.status}`);
+      // Parse error body for a clearer message (e.g. "Monthly API quota exceeded")
+      let errorMsg = `GoldAPI error ${response.status}`;
+      try {
+        const errBody = await response.json();
+        if (errBody.error) {
+          errorMsg = errBody.error;
+        }
+      } catch {
+        // ignore parse error
+      }
+      return unavailableMetal(asset, errorMsg, "rate_limited");
     }
 
     const data = await response.json();
