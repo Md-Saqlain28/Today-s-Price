@@ -4,6 +4,7 @@ import { Header } from "./components/Header.jsx";
 import { CategorySection } from "./components/CategorySection.jsx";
 import { LastUpdatedBadge } from "./components/LastUpdatedBadge.jsx";
 import { usePriceData } from "./hooks/usePriceData.js";
+import DailyCommodities from "./components/DailyCommodities.jsx";
 
 export default function App() {
   const {
@@ -61,6 +62,8 @@ export default function App() {
           />
         ))}
       </div>
+
+      <DailyCommodities />
     </main>
   );
 }
