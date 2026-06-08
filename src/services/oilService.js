@@ -75,14 +75,52 @@ async function fetchEnergyFromProxy(url, assets) {
   });
 }
 
+// ──────────────────────────────────────────────
+// USD → INR conversion (EIA only returns USD)
+// ──────────────────────────────────────────────
+
+let cachedInrRate = null;
+
+async function getUsdToInrRate() {
+  if (cachedInrRate) return cachedInrRate;
+
+  try {
+    const res = await fetch(
+      "https://api.coingecko.com/api/v3/exchange_rates"
+    );
+    if (res.ok) {
+      const data = await res.json();
+      // CoinGecko returns rates relative to BTC — derive USD→INR
+      const usdRate = data.rates?.usd?.value;
+      const inrRate = data.rates?.inr?.value;
+      if (usdRate && inrRate) {
+        cachedInrRate = inrRate / usdRate;
+        return cachedInrRate;
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+
+  // Fallback approximate rate if API fails
+  cachedInrRate = 85;
+  return cachedInrRate;
+}
+
 async function fetchEnergyFromEiaV2(assets) {
-  const results = await Promise.allSettled(
-    assets.map((asset) => fetchSingleEiaV2Asset(asset))
-  );
+  const [results, inrRate] = await Promise.all([
+    Promise.allSettled(assets.map((asset) => fetchSingleEiaV2Asset(asset))),
+    getUsdToInrRate(),
+  ]);
 
   return results.map((result, index) => {
     if (result.status === "fulfilled") {
-      return result.value;
+      const item = result.value;
+      // Convert USD price to INR
+      if (item.price != null) {
+        item.price = Math.round(item.price * inrRate * 100) / 100;
+      }
+      return item;
     }
 
     return {

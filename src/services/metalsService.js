@@ -105,7 +105,7 @@ async function fetchYesterdayPrices() {
       api_key: METALS_DEV_API_KEY,
       start_date: yesterday,
       end_date: yesterday,
-      currency: "USD",
+      currency: "INR",
       unit: "toz",
     });
 
@@ -174,7 +174,7 @@ async function fetchMetalsDevLatest() {
   try {
     const params = new URLSearchParams({
       api_key: METALS_DEV_API_KEY,
-      currency: "USD",
+      currency: "INR",
       unit: "toz",
     });
 
@@ -216,7 +216,7 @@ async function fetchGoldApiAsset(asset) {
   }
 
   try {
-    const response = await fetch(`${GOLD_API_LOCAL_PREFIX}/${symbol}/USD`, {
+    const response = await fetch(`${GOLD_API_LOCAL_PREFIX}/${symbol}/INR`, {
       headers: {
         "x-access-token": GOLD_API_KEY,
       },

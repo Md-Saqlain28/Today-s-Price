@@ -1,14 +1,14 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
-const currencyFormatter = new Intl.NumberFormat(undefined, {
+const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "USD",
+  currency: "INR",
   maximumFractionDigits: 2,
 });
 
-const compactCurrencyFormatter = new Intl.NumberFormat(undefined, {
+const compactCurrencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
-  currency: "USD",
+  currency: "INR",
   maximumFractionDigits: 4,
 });
 
