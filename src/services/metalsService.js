@@ -106,7 +106,7 @@ async function fetchYesterdayPrices() {
       start_date: yesterday,
       end_date: yesterday,
       currency: "INR",
-      unit: "toz",
+      unit: "g",
     });
 
     const response = await fetch(
@@ -175,7 +175,7 @@ async function fetchMetalsDevLatest() {
     const params = new URLSearchParams({
       api_key: METALS_DEV_API_KEY,
       currency: "INR",
-      unit: "toz",
+      unit: "g",
     });
 
     const response = await fetch(`${METALS_DEV_URL}?${params.toString()}`);

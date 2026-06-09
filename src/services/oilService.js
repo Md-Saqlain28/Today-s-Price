@@ -3,9 +3,24 @@ import { fetchCommodityPrice } from "./tavilyService.js";
 
 const EIA_V2_BASE = "https://api.eia.gov/v2";
 
-// Petrol & diesel are India-specific retail prices and come from Tavily,
-// not EIA (which only publishes US retail series).
+// India-specific energy prices come from Tavily search (MCX / Indian market).
+// EIA is kept as a fallback for any assets not in this map.
 const tavilyIndiaConfig = {
+  "wti-crude": {
+    id: "wti-crude-in",
+    name: "WTI Crude Oil (India)",
+    query: "MCX crude oil price per barrel India today rupees 2026",
+  },
+  "brent-crude": {
+    id: "brent-crude-in",
+    name: "Brent Crude Oil (India)",
+    query: "Brent crude oil price per barrel India today rupees 2026",
+  },
+  "natural-gas": {
+    id: "natural-gas-in",
+    name: "Natural Gas (India)",
+    query: "MCX natural gas price per MMBtu India today rupees 2026",
+  },
   petrol: {
     id: "petrol-in",
     name: "Petrol (India)",

@@ -5,7 +5,7 @@
  * Capped at MAX_POINTS to keep storage small. Used to render sparklines.
  */
 
-const STORAGE_KEY = "tp_price_history_v1";
+const STORAGE_KEY = "tp_price_history_v2";
 const MAX_POINTS = 60;
 // Skip identical-price writes if the last point is newer than this.
 const MIN_INTERVAL_MS = 20 * 1000;

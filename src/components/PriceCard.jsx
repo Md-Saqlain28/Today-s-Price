@@ -72,7 +72,10 @@ export function PriceCard({ price }) {
         <span>{price.symbol}</span>
       </div>
 
-      <strong className="asset-price">{formatPrice(price.price)}</strong>
+      <div className="price-row">
+        <strong className="asset-price">{formatPrice(price.price)}</strong>
+        {price.unit && <span className="asset-unit">{price.unit}</span>}
+      </div>
 
       <Sparkline
         id={price.id}
@@ -91,6 +94,9 @@ export function PriceCard({ price }) {
         <span>{formatTimestamp(price.updatedAt)}</span>
       </div>
 
+      {price.category === "metals" && (
+        <div className="spot-disclaimer">Intl. spot price</div>
+      )}
       <div className="source-line">Source: {price.source}</div>
     </article>
   );

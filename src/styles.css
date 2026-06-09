@@ -475,6 +475,32 @@ code {
   white-space: nowrap;
 }
 
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.price-row .asset-price {
+  margin-bottom: 0;
+}
+
+.asset-unit {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.spot-disclaimer {
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-style: italic;
+  margin-top: 4px;
+}
+
 /* ────────────────────────────────────────────────────────────────
    Sparkline
    ──────────────────────────────────────────────────────────────── */
