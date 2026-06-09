@@ -5,6 +5,7 @@ import {
   clearAllCache,
   DAILY_COMMODITIES,
 } from "../services/tavilyService.js";
+import { recordMany } from "../utils/priceHistory.js";
 
 const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
@@ -44,6 +45,7 @@ export function useDailyCommodities() {
 
     try {
       const results = await fetchAllCommodities();
+      recordMany(results);
       setCommodities(results);
       setLastFetchedAt(new Date().toISOString());
     } catch (err) {

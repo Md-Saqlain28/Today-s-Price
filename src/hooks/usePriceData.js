@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ASSET_SECTIONS, POLLING_INTERVALS } from "../constants/assets.js";
 import { fetchSectionPrices } from "../services/priceService.js";
+import { recordMany } from "../utils/priceHistory.js";
 
 const initialPrices = ASSET_SECTIONS.reduce((acc, section) => {
   acc[section.id] = section.assets.map((asset) => ({
@@ -28,6 +29,7 @@ export function usePriceData() {
 
     try {
       const prices = await fetchSectionPrices(sectionId);
+      recordMany(prices);
       setPricesBySection((current) => ({ ...current, [sectionId]: prices }));
       setErrorsBySection((current) => ({ ...current, [sectionId]: null }));
       setLastRefreshAt(new Date().toISOString());
