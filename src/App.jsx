@@ -1,4 +1,4 @@
-import { Activity, RefreshCw, ShieldCheck } from "lucide-react";
+import { Activity, RefreshCw } from "lucide-react";
 import { ASSET_SECTIONS } from "./constants/assets.js";
 import { Header } from "./components/Header.jsx";
 import { CategorySection } from "./components/CategorySection.jsx";
@@ -40,15 +40,6 @@ export default function App() {
             Refresh
           </button>
         </div>
-      </section>
-
-      <section className="proxy-note" aria-label="API key protection note">
-        <ShieldCheck size={18} aria-hidden="true" />
-        <p>
-          Keyed data sources are designed to run through a lightweight proxy.
-          Set <code>VITE_PROXY_BASE_URL</code> to a Cloudflare Worker or Vercel
-          Edge Function endpoint when those APIs are ready.
-        </p>
       </section>
 
       <div className="section-stack">
