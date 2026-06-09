@@ -2,6 +2,7 @@ import { useState } from "react";
 import { RefreshCw, Search, X, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { useDailyCommodities } from "../hooks/useDailyCommodities.js";
 import { COMMODITY_CATEGORIES } from "../services/tavilyService.js";
+import { Sparkline } from "./Sparkline.jsx";
 
 /** ────────────────────────────────────────────────────────────────
  *  Format helpers
@@ -38,7 +39,13 @@ function CommodityCard({ item }) {
   return (
     <article className="dc-card" id={`dc-card-${item.id}`}>
       <div className="dc-card-header">
-        <span className="dc-card-icon">{item.icon}</span>
+        {typeof item.icon === "string" && /^https?:\/\//i.test(item.icon) ? (
+          <span className="dc-card-icon dc-card-icon-img">
+            <img src={item.icon} alt={item.name} loading="lazy" />
+          </span>
+        ) : (
+          <span className="dc-card-icon">{item.icon}</span>
+        )}
         <span className={`dc-card-badge ${isLive ? "dc-badge-live" : "dc-badge-unavail"}`}>
           {isLive ? "Live" : "Unavailable"}
         </span>
@@ -53,6 +60,13 @@ function CommodityCard({ item }) {
         </strong>
 
         {item.unit && <span className="dc-card-unit">{item.unit}</span>}
+
+        <Sparkline
+          id={item.id}
+          tick={item.updatedAt}
+          price={item.price}
+          change24h={item.change24h}
+        />
       </div>
 
       <div className="dc-card-footer">

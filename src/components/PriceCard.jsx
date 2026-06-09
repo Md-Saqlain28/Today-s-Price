@@ -1,4 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
+import { Sparkline } from "./Sparkline.jsx";
 
 const currencyFormatter = new Intl.NumberFormat("en-IN", {
   style: "currency",
@@ -40,16 +41,29 @@ function formatTimestamp(timestamp) {
   }).format(new Date(timestamp));
 }
 
+// Upstream feeds occasionally return raw deltas instead of percentages,
+// producing absurd 9000%+ values. Treat anything beyond this as untrusted.
+const MAX_PLAUSIBLE_CHANGE = 1000;
+
+function isPlausibleChange(value) {
+  return (
+    typeof value === "number" &&
+    !isNaN(value) &&
+    Math.abs(value) <= MAX_PLAUSIBLE_CHANGE
+  );
+}
+
 export function PriceCard({ price }) {
+  const trustedChange = isPlausibleChange(price.change24h) ? price.change24h : null;
   const direction =
-    price.change24h > 0 ? "up" : price.change24h < 0 ? "down" : "flat";
+    trustedChange > 0 ? "up" : trustedChange < 0 ? "down" : "flat";
   const ChangeIcon =
     direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus;
 
   return (
     <article className="price-card">
       <div className="card-topline">
-        <span className="asset-icon">{price.icon}</span>
+        <AssetIcon icon={price.icon} alt={price.name} />
         <span className={`status-pill ${price.status}`}>{statusLabel(price.status)}</span>
       </div>
 
@@ -60,12 +74,19 @@ export function PriceCard({ price }) {
 
       <strong className="asset-price">{formatPrice(price.price)}</strong>
 
+      <Sparkline
+        id={price.id}
+        tick={price.updatedAt}
+        price={price.price}
+        change24h={trustedChange}
+      />
+
       <div className="asset-meta">
         <span className={`change-value ${direction}`}>
           <ChangeIcon size={16} aria-hidden="true" />
-          {price.change24h == null
+          {trustedChange == null
             ? "No 24h change"
-            : `${percentFormatter.format(price.change24h)}%`}
+            : `${percentFormatter.format(trustedChange)}%`}
         </span>
         <span>{formatTimestamp(price.updatedAt)}</span>
       </div>
@@ -73,6 +94,17 @@ export function PriceCard({ price }) {
       <div className="source-line">Source: {price.source}</div>
     </article>
   );
+}
+
+function AssetIcon({ icon, alt }) {
+  if (typeof icon === "string" && /^https?:\/\//i.test(icon)) {
+    return (
+      <span className="asset-icon asset-icon-img">
+        <img src={icon} alt={alt} loading="lazy" />
+      </span>
+    );
+  }
+  return <span className="asset-icon">{icon}</span>;
 }
 
 function statusLabel(status) {
