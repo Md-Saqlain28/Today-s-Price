@@ -10,10 +10,30 @@ export const ASSET_SECTIONS = [
     title: "Cryptocurrency",
     description: "Fast-moving digital assets from CoinGecko.",
     assets: [
-      { id: "bitcoin", symbol: "BTC", name: "Bitcoin", icon: "B" },
-      { id: "ethereum", symbol: "ETH", name: "Ethereum", icon: "E" },
-      { id: "solana", symbol: "SOL", name: "Solana", icon: "S" },
-      { id: "ripple", symbol: "XRP", name: "XRP", icon: "X" },
+      {
+        id: "bitcoin",
+        symbol: "BTC",
+        name: "Bitcoin",
+        icon: "https://assets.coingecko.com/coins/images/1/small/bitcoin.png",
+      },
+      {
+        id: "ethereum",
+        symbol: "ETH",
+        name: "Ethereum",
+        icon: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
+      },
+      {
+        id: "solana",
+        symbol: "SOL",
+        name: "Solana",
+        icon: "https://assets.coingecko.com/coins/images/4128/small/solana.png",
+      },
+      {
+        id: "ripple",
+        symbol: "XRP",
+        name: "XRP",
+        icon: "https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png",
+      },
     ],
   },
   {
@@ -32,11 +52,11 @@ export const ASSET_SECTIONS = [
     title: "Petroleum & Energy",
     description: "Proxy endpoints for oil, gas, petrol, and diesel prices.",
     assets: [
-      { id: "wti-crude", symbol: "WTI", name: "WTI Crude Oil", icon: "Wt" },
-      { id: "brent-crude", symbol: "BRENT", name: "Brent Crude", icon: "Br" },
-      { id: "natural-gas", symbol: "NG", name: "Natural Gas", icon: "Ng" },
-      { id: "petrol", symbol: "PETROL", name: "Petrol", icon: "Pe" },
-      { id: "diesel", symbol: "DIESEL", name: "Diesel", icon: "Di" },
+      { id: "wti-crude", symbol: "WTI", name: "WTI Crude Oil", icon: "🛢️" },
+      { id: "brent-crude", symbol: "BRENT", name: "Brent Crude", icon: "🛢️" },
+      { id: "natural-gas", symbol: "NG", name: "Natural Gas", icon: "🔥" },
+      { id: "petrol", symbol: "PETROL", name: "Petrol", icon: "⛽" },
+      { id: "diesel", symbol: "DIESEL", name: "Diesel", icon: "🚛" },
     ],
   },
 ];
