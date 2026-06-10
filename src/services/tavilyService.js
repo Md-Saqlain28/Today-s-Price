@@ -14,25 +14,7 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
  *  Commodity definitions — edit this array to add more items.
  *  ──────────────────────────────────────────────────────────────── */
 export const DAILY_COMMODITIES = [
-  // Fuel & Energy
-  {
-    id: "petrol-in",
-    name: "Petrol",
-    symbol: "PET",
-    unit: "per litre",
-    icon: "⛽",
-    query: "petrol price per litre India today rupees 2026",
-    category: "fuel",
-  },
-  {
-    id: "diesel-in",
-    name: "Diesel",
-    symbol: "DSL",
-    unit: "per litre",
-    icon: "⛽",
-    query: "diesel price per litre India today rupees 2026",
-    category: "fuel",
-  },
+  // Fuel & Energy (Petrol & Diesel excluded — shown in Petroleum & Energy section)
   {
     id: "lpg",
     name: "LPG Cylinder",

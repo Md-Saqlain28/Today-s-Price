@@ -1,4 +1,5 @@
 import { buildProxyUrl, GOLD_API_KEY } from "./config.js";
+import { fetchCommodityPrice, extractPrice } from "./tavilyService.js";
 
 // During development Vite proxies /api/goldapi → https://www.goldapi.io/api
 // so the browser never hits a CORS wall. In production, set VITE_PROXY_BASE_URL
@@ -6,6 +7,7 @@ import { buildProxyUrl, GOLD_API_KEY } from "./config.js";
 const GOLD_API_LOCAL_PREFIX = "/api/goldapi";
 
 const METALS_DEV_API_KEY = import.meta.env.VITE_METALS_DEV_API_KEY || "";
+const TAVILY_API_KEY = import.meta.env.VITE_TAVILY_API_KEY || "";
 const METALS_DEV_URL = "https://api.metals.dev/v1/latest";
 const METALS_DEV_TIMESERIES_URL = "https://api.metals.dev/v1/timeseries";
 
@@ -23,6 +25,14 @@ const metalsDevKeyMap = {
   palladium: "palladium",
 };
 
+// Tavily search queries for each precious metal (INR per gram)
+const tavilyMetalQueries = {
+  gold: "gold price per gram India today rupees 2026",
+  silver: "silver price per gram India today rupees 2026",
+  platinum: "platinum price per gram India today rupees 2026",
+  palladium: "palladium price per gram India today rupees 2026",
+};
+
 // Cache yesterday's prices so we don't burn quota on every poll.
 // Refreshed at most once per browser session.
 let cachedYesterdayPrices = null;
@@ -37,12 +47,29 @@ export async function fetchMetalsPrices(assets) {
 
   // 2. Metals.dev API (single call for all metals — more quota-efficient)
   if (METALS_DEV_API_KEY) {
-    return fetchMetalsFromMetalsDev(assets);
+    try {
+      const results = await fetchMetalsFromMetalsDev(assets);
+      if (results.some((r) => r.price != null)) return results;
+      console.warn("Metals.dev returned no prices, trying fallbacks");
+    } catch (e) {
+      console.warn("Metals.dev failed, trying fallbacks:", e.message);
+    }
   }
 
   // 3. GoldAPI via Vite dev proxy (local development)
   if (GOLD_API_KEY) {
-    return fetchMetalsFromGoldApi(assets);
+    try {
+      const results = await fetchMetalsFromGoldApi(assets);
+      if (results.some((r) => r.price != null)) return results;
+      console.warn("GoldAPI returned no prices, trying Tavily fallback");
+    } catch (e) {
+      console.warn("GoldAPI failed, trying Tavily fallback:", e.message);
+    }
+  }
+
+  // 4. Tavily search fallback — scrapes current prices from the web
+  if (TAVILY_API_KEY) {
+    return fetchMetalsFromTavily(assets);
   }
 
   return assets.map((asset) => ({
@@ -267,4 +294,49 @@ function unavailableMetal(asset, source, status = "unavailable") {
     source,
     status,
   };
+}
+
+// ──────────────────────────────────────────────
+// Tavily search fallback for precious metals
+// ──────────────────────────────────────────────
+
+async function fetchMetalsFromTavily(assets) {
+  const results = await Promise.allSettled(
+    assets.map(async (asset) => {
+      const query = tavilyMetalQueries[asset.id];
+      if (!query) {
+        return unavailableMetal(asset, "No Tavily query defined");
+      }
+
+      // Build a pseudo-commodity object that tavilyService can handle
+      const commodity = {
+        id: `metal-${asset.id}`,
+        name: asset.name,
+        symbol: asset.symbol,
+        unit: asset.unit || "per gram",
+        icon: asset.icon,
+        query,
+        category: "metals",
+      };
+
+      const result = await fetchCommodityPrice(commodity);
+
+      return {
+        ...asset,
+        category: "metals",
+        price: result.price,
+        change24h: null, // Tavily can't reliably provide 24h change
+        updatedAt: result.updatedAt || new Date().toISOString(),
+        source: result.fromCache ? "Tavily (cached)" : "Tavily",
+        status: result.price != null ? "live" : "unavailable",
+      };
+    })
+  );
+
+  return results.map((result, index) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    }
+    return unavailableMetal(assets[index], "Tavily fetch failed");
+  });
 }
