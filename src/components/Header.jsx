@@ -1,6 +1,7 @@
 import { CircleDollarSign } from "lucide-react";
+import { StateSelector } from "./StateSelector.jsx";
 
-export function Header() {
+export function Header({ selectedState, onStateChange }) {
   return (
     <header className="top-bar">
       <a className="brand" href="/" aria-label="Today's Price home">
@@ -14,6 +15,7 @@ export function Header() {
         <span aria-hidden="true" />
         Live
       </span>
+      <StateSelector value={selectedState} onChange={onStateChange} />
     </header>
   );
 }

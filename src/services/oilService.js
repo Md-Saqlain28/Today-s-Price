@@ -180,6 +180,7 @@ async function fetchIndiaFuelViaTavily(asset) {
     id: cfg.id,
     name: cfg.name,
     query: cfg.query,
+    stateDependent: true,
   });
 
   return {

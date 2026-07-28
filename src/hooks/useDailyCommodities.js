@@ -7,15 +7,9 @@ import {
 } from "../services/tavilyService.js";
 import { recordMany } from "../utils/priceHistory.js";
 
-const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
-/**
- * React hook for daily Indian commodity prices via Tavily.
- *
- * Returns commodities data grouped by category, loading/error state,
- * a refresh function, and a search function for arbitrary queries.
- */
-export function useDailyCommodities() {
+export function useDailyCommodities(stateName = "Delhi") {
   const [commodities, setCommodities] = useState(() =>
     DAILY_COMMODITIES.map((c) => ({
       ...c,
@@ -32,19 +26,16 @@ export function useDailyCommodities() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastFetchedAt, setLastFetchedAt] = useState(null);
-
-  // ── Search state ──────────────────────────────────────────────
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState(null);
 
-  // ── Fetch all commodities ─────────────────────────────────────
   const fetchAll = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const results = await fetchAllCommodities();
+      const results = await fetchAllCommodities(stateName);
       recordMany(results);
       setCommodities(results);
       setLastFetchedAt(new Date().toISOString());
@@ -53,45 +44,45 @@ export function useDailyCommodities() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [stateName]);
 
-  // ── Force refresh (clears cache) ─────────────────────────────
   const refresh = useCallback(() => {
     clearAllCache();
     fetchAll();
   }, [fetchAll]);
 
-  // ── Search for an arbitrary commodity ─────────────────────────
-  const search = useCallback(async (query) => {
-    if (!query.trim()) return;
+  const search = useCallback(
+    async (query) => {
+      if (!query.trim()) return;
 
-    setIsSearching(true);
-    setSearchError(null);
+      setIsSearching(true);
+      setSearchError(null);
 
-    try {
-      const result = await searchCommodity(query.trim());
-      setSearchResults((prev) => [result, ...prev].slice(0, 10));
-    } catch (err) {
-      setSearchError(err.message || "Search failed");
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
+      try {
+        const result = await searchCommodity(query.trim(), stateName);
+        setSearchResults((prev) => [result, ...prev].slice(0, 10));
+      } catch (err) {
+        setSearchError(err.message || "Search failed");
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [stateName]
+  );
 
   const clearSearch = useCallback(() => {
     setSearchResults([]);
     setSearchError(null);
   }, []);
 
-  // ── Initial fetch + auto-refresh interval ─────────────────────
   useEffect(() => {
+    clearAllCache();
     fetchAll();
 
     const timer = setInterval(fetchAll, REFRESH_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [fetchAll]);
+  }, [fetchAll, stateName]);
 
-  // ── Group by category ─────────────────────────────────────────
   const byCategory = useMemo(() => {
     const map = {};
     for (const c of commodities) {
@@ -115,3 +106,4 @@ export function useDailyCommodities() {
     clearSearch,
   };
 }
+

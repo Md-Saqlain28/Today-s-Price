@@ -5,8 +5,11 @@ import { CategorySection } from "./components/CategorySection.jsx";
 import { LastUpdatedBadge } from "./components/LastUpdatedBadge.jsx";
 import { usePriceData } from "./hooks/usePriceData.js";
 import DailyCommodities from "./components/DailyCommodities.jsx";
+import { useUserState } from "./hooks/useUserState.js";
+import { StateOnboardingModal } from "./components/StateOnboardingModal.jsx";
 
 export default function App() {
+  const { selectedState, suggestedState, hasOnboarded, setSelectedState } = useUserState();
   const {
     pricesBySection,
     loadingBySection,
@@ -14,11 +17,18 @@ export default function App() {
     lastRefreshAt,
     isRefreshing,
     refreshAll,
-  } = usePriceData();
+  } = usePriceData(selectedState?.name);
 
   return (
     <main className="app-shell">
-      <Header />
+      {!hasOnboarded && (
+        <StateOnboardingModal
+          suggestedState={suggestedState}
+          onConfirm={setSelectedState}
+        />
+      )}
+
+      <Header selectedState={selectedState} onStateChange={setSelectedState} />
 
       <section className="dashboard-toolbar" aria-label="Dashboard controls">
         <div className="toolbar-copy">
@@ -54,7 +64,7 @@ export default function App() {
         ))}
       </div>
 
-      <DailyCommodities />
+      <DailyCommodities stateName={selectedState?.name} />
     </main>
   );
 }

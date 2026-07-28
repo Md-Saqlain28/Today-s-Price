@@ -110,6 +110,41 @@ code {
   max-width: var(--container);
 }
 
+.state-selector {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  min-width: 190px;
+}
+
+.state-selector-label {
+  align-items: center;
+  color: var(--text-muted);
+  display: inline-flex;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.state-selector-input,
+.state-modal-field select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  min-width: 0;
+  outline: none;
+}
+
 .brand {
   align-items: center;
   color: inherit;
@@ -647,6 +682,86 @@ code {
   gap: 10px;
   margin-bottom: 14px;
   padding: 12px 14px;
+}
+
+.state-modal-backdrop {
+  align-items: center;
+  background: rgba(10, 18, 30, 0.45);
+  backdrop-filter: blur(4px);
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  position: fixed;
+  z-index: 50;
+}
+
+.state-modal {
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  max-width: 520px;
+  padding: 24px;
+  width: min(100%, 520px);
+}
+
+.state-modal-kicker {
+  align-items: center;
+  color: var(--accent-2);
+  display: inline-flex;
+  font-size: 0.8rem;
+  font-weight: 800;
+  gap: 6px;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.state-modal h2 {
+  margin: 0;
+  font-size: 1.55rem;
+}
+
+.state-modal p {
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 10px 0 18px;
+}
+
+.state-modal-field {
+  display: grid;
+  gap: 8px;
+}
+
+.state-modal-field span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.state-modal-field select {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 46px;
+  padding: 0 14px;
+}
+
+.state-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+.state-modal-primary {
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  min-height: 44px;
+  padding: 10px 16px;
 }
 
 /* ────────────────────────────────────────────────────────────────

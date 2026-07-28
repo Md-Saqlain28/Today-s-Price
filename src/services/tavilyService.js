@@ -9,7 +9,6 @@
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-
 /** ────────────────────────────────────────────────────────────────
  *  Commodity definitions — edit this array to add more items.
  *  ──────────────────────────────────────────────────────────────── */
@@ -193,6 +192,26 @@ export function clearAllCache() {
   DAILY_COMMODITIES.forEach((c) => sessionStorage.removeItem(cacheKey(c.id)));
 }
 
+export function buildCommodityQuery(commodity, stateName = "") {
+  if (!commodity?.query) return "";
+
+  if (!stateName) return commodity.query;
+
+  const query = commodity.query;
+  const normalized = query.toLowerCase();
+  const shouldInjectState =
+    commodity.stateDependent !== false &&
+    !normalized.includes(stateName.toLowerCase());
+
+  if (!shouldInjectState) return query;
+
+  if (normalized.includes("india today")) {
+    return query.replace(/India today/i, `${stateName} today`);
+  }
+
+  return `${query} ${stateName}`.trim();
+}
+
 /** ────────────────────────────────────────────────────────────────
  *  Tavily fetch helpers
  *  ──────────────────────────────────────────────────────────────── */
@@ -244,7 +263,7 @@ async function tavilySearch(query) {
 /**
  * Fetch a single commodity, using cache when available.
  */
-export async function fetchCommodityPrice(commodity) {
+export async function fetchCommodityPrice(commodity, stateName = "") {
   const cached = readCache(commodity.id);
   if (cached) {
     return {
@@ -261,7 +280,7 @@ export async function fetchCommodityPrice(commodity) {
   }
 
   try {
-    const result = await tavilySearch(commodity.query);
+    const result = await tavilySearch(buildCommodityQuery(commodity, stateName));
     writeCache(commodity.id, result);
 
     return {
@@ -294,7 +313,7 @@ export async function fetchCommodityPrice(commodity) {
 /**
  * Fetch all daily commodities (parallel, rate-limited with staggering).
  */
-export async function fetchAllCommodities() {
+export async function fetchAllCommodities(stateName = "") {
   const results = [];
 
   // Stagger requests in small batches to avoid rate-limit hits
@@ -302,7 +321,7 @@ export async function fetchAllCommodities() {
   for (let i = 0; i < DAILY_COMMODITIES.length; i += batchSize) {
     const batch = DAILY_COMMODITIES.slice(i, i + batchSize);
     const batchResults = await Promise.all(
-      batch.map((c) => fetchCommodityPrice(c))
+      batch.map((c) => fetchCommodityPrice(c, stateName))
     );
     results.push(...batchResults);
 
@@ -318,8 +337,9 @@ export async function fetchAllCommodities() {
 /**
  * Search for any commodity price by freeform query.
  */
-export async function searchCommodity(userQuery) {
-  const query = `${userQuery} current price India today rupees 2026`;
+export async function searchCommodity(userQuery, stateName = "") {
+  const locationClause = stateName ? `${stateName} ` : "India ";
+  const query = `${userQuery} current price ${locationClause}today rupees 2026`;
   const result = await tavilySearch(query);
 
   return {

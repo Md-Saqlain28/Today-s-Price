@@ -16,7 +16,7 @@ const initialPrices = ASSET_SECTIONS.reduce((acc, section) => {
   return acc;
 }, {});
 
-export function usePriceData() {
+export function usePriceData(stateName = "Delhi") {
   const [pricesBySection, setPricesBySection] = useState(initialPrices);
   const [loadingBySection, setLoadingBySection] = useState(
     ASSET_SECTIONS.reduce((acc, section) => ({ ...acc, [section.id]: true }), {})
@@ -28,7 +28,7 @@ export function usePriceData() {
     setLoadingBySection((current) => ({ ...current, [sectionId]: true }));
 
     try {
-      const prices = await fetchSectionPrices(sectionId);
+      const prices = await fetchSectionPrices(sectionId, stateName);
       recordMany(prices);
       setPricesBySection((current) => ({ ...current, [sectionId]: prices }));
       setErrorsBySection((current) => ({ ...current, [sectionId]: null }));
@@ -41,7 +41,7 @@ export function usePriceData() {
     } finally {
       setLoadingBySection((current) => ({ ...current, [sectionId]: false }));
     }
-  }, []);
+  }, [stateName]);
 
   const refreshAll = useCallback(() => {
     ASSET_SECTIONS.forEach((section) => {
@@ -62,7 +62,7 @@ export function usePriceData() {
     return () => {
       timers.forEach((timer) => window.clearInterval(timer));
     };
-  }, [refreshAll, refreshSection]);
+  }, [refreshAll, refreshSection, stateName]);
 
   const isRefreshing = useMemo(
     () => Object.values(loadingBySection).some(Boolean),

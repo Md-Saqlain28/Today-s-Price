@@ -185,7 +185,7 @@ function CommoditySearch({ onSearch, isSearching, searchError, searchResults, on
  *  Main section component
  *  ──────────────────────────────────────────────────────────────── */
 
-export default function DailyCommodities() {
+export default function DailyCommodities({ stateName }) {
   const {
     byCategory,
     isLoading,
@@ -197,7 +197,7 @@ export default function DailyCommodities() {
     isSearching,
     searchError,
     clearSearch,
-  } = useDailyCommodities();
+  } = useDailyCommodities(stateName);
 
   return (
     <section className="dc-section" id="daily-commodities" aria-labelledby="dc-title">
